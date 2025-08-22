@@ -1,22 +1,37 @@
-// lib/telemetry.js
-import { Buffer } from "buffer";
+import fetch from "node-fetch";
+import { parseTelemetry } from "../lib/telemetry.js";
 
-// ⚠️ This is a simplified placeholder parser
-// In production you’d paste the full gopro-telemetry code here (MIT licensed)
+export default async function handler(req, res) {
+  try {
+    const { videoUrl } = req.query;
+    if (!videoUrl) {
+      return res.status(400).json({ error: "Missing videoUrl query param" });
+    }
 
-export async function parseTelemetry(buffer) {
-  // Instead of implementing full GPMF parsing here,
-  // you can start with a stub for testing API plumbing.
-  return {
-    streams: [
-      {
-        name: "GPS5",
-        samples: [
-          { value: [51.71765, -3.38487, 443.67, 5.0], cts: 100 },
-          { value: [51.71766, -3.38486, 445.00, 8.0], cts: 200 },
-          { value: [51.71767, -3.38485, 446.30, 12.0], cts: 300 }
-        ]
-      }
-    ]
-  };
+    // Fetch video
+    const response = await fetch(videoUrl);
+    if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    // Parse telemetry
+    const telemetry = await parseTelemetry(buffer);
+
+    // Extract GPS5 samples if present
+    const gps = telemetry.streams?.find(s => s.name === "GPS5")?.samples || [];
+    const samples = gps.map(s => ({
+      lat: s.value[0],
+      lon: s.value[1],
+      alt: s.value[2],
+      speedKmh: s.value[3] * 3.6,
+      timeMs: s.cts
+    }));
+
+    res.status(200).json({
+      samples,
+      totalSamples: samples.length
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 }
+
