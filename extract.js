@@ -1,0 +1,22 @@
+// lib/telemetry.js
+import { Buffer } from "buffer";
+
+// ⚠️ This is a simplified placeholder parser
+// In production you’d paste the full gopro-telemetry code here (MIT licensed)
+
+export async function parseTelemetry(buffer) {
+  // Instead of implementing full GPMF parsing here,
+  // you can start with a stub for testing API plumbing.
+  return {
+    streams: [
+      {
+        name: "GPS5",
+        samples: [
+          { value: [51.71765, -3.38487, 443.67, 5.0], cts: 100 },
+          { value: [51.71766, -3.38486, 445.00, 8.0], cts: 200 },
+          { value: [51.71767, -3.38485, 446.30, 12.0], cts: 300 }
+        ]
+      }
+    ]
+  };
+}
